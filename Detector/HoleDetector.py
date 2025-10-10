@@ -364,7 +364,7 @@ class HoleDetector:
 
 if __name__ == '__main__':
     # mesh = trimesh.load_mesh(r"D:\University\Post\HunYuan3D_test_cases\test_cases\chaos.obj")
-    mesh = trimesh.load_mesh(r"D:\University\Post\Data\BPT生成结果\dm\c3_mesh_2.obj")
+    mesh = trimesh.load_mesh(r"c3_mesh.obj")
     hd = HoleDetector(mesh)
     hd.detect_holes_2()
     hd.visual()

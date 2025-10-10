@@ -6,7 +6,7 @@ from utils.visual import show_mesh
 
 
 def main():
-    mesh = trimesh.load_mesh(r"D:\University\Post\Data\BPT生成结果\dm\c3_mesh_2.obj")
+    mesh = trimesh.load_mesh(r"c3_mesh_2.obj")
     hd = HoleDetector(mesh)
     hole_loops = hd.detect_holes_2()
     repairer = HoleRepairer(mesh)
