@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Mesh可视化 - Mesh处理平台{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+            <div class="position-sticky pt-3">
+                <div class="sidebar-header text-center py-4">
+                    <h4 class="text-white">
+                        <i class="fas fa-cube me-2"></i>
+                        Mesh Tools
+                    </h4>
+                    <small class="text-white-50">3D模型处理平台</small>
+                </div>
+
+                <ul class="nav flex-column">
+                    {% for item in sidebar_items %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if item.active %}active{% endif %}" href="{{ item.url }}">
+                            <span class="me-2">{{ item.icon }}</span>
+                            {{ item.name }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <!-- 可视化控制面板 -->
+                <div class="px-3 mt-4">
+                    <h6 class="text-uppercase text-white-50 mb-3">
+                        <i class="fas fa-sliders-h me-2"></i>显示设置
+                    </h6>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="wireframeToggle" checked>
+                        <label class="form-check-label text-white small" for="wireframeToggle">线框模式</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="vertexToggle">
+                        <label class="form-check-label text-white small" for="vertexToggle">显示顶点</label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="normalToggle">
+                        <label class="form-check-label text-white small" for="normalToggle">显示法线</label>
+                    </div>
+
+                    <h6 class="text-uppercase text-white-50 mb-2 mt-4">渲染质量</h6>
+                    <select class="form-select form-select-sm bg-dark text-white border-dark">
+                        <option>低质量</option>
+                        <option selected>中等质量</option>
+                        <option>高质量</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm rounded mb-4">
+                <div class="container-fluid">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    
+                    <div class="d-flex align-items-center">
+                        <h4 class="mb-0 text-primary">
+                            <i class="fas fa-eye me-2"></i>Mesh可视化
+                        </h4>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- 3D视图区域 -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">3D视图</h5>
+                            <div class="btn-group">
+                                <button class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-rotate"></i> 重置视图
+                                </button>
+                                <button class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-screenshot"></i> 截图
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- 3D画布占位 -->
+                            <div id="meshCanvas" class="bg-light" style="height: 500px; display: flex; align-items: center; justify-content: center;">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-cube fa-4x mb-3"></i>
+                                    <h5>3D可视化区域</h5>
+                                    <p>上传或选择模型开始可视化</p>
+                                    <button class="btn btn-primary mt-2">
+                                        <i class="fas fa-folder-open me-2"></i>选择模型
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 模型信息和控制 -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2 text-info"></i>模型信息
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <small class="text-muted d-block">模型名称</small>
+                                    <strong>未选择模型</strong>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <small class="text-muted d-block">文件格式</small>
+                                    <strong>-</strong>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <small class="text-muted d-block">顶点数量</small>
+                                    <strong>-</strong>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <small class="text-muted d-block">面片数量</strong>
+                                    <strong>-</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">边界框</small>
+                                    <strong>-</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">文件大小</small>
+                                    <strong>-</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-tools me-2 text-warning"></i>分析工具
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary">
+                                    <i class="fas fa-ruler me-2"></i>测量距离
+                                </button>
+                                <button class="btn btn-outline-success">
+                                    <i class="fas fa-search me-2"></i>缺陷检测
+                                </button>
+                                <button class="btn btn-outline-info">
+                                    <i class="fas fa-chart-bar me-2"></i>几何分析
+                                </button>
+                                <button class="btn btn-outline-warning">
+                                    <i class="fas fa-cut me-2"></i>剖面查看
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
