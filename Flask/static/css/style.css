@@ -168,3 +168,79 @@ main {
     backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, 0.95) !important;
 }
+
+/* 文件上传相关样式 */
+.upload-area {
+    border: 3px dashed #dee2e6;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    cursor: pointer;
+}
+
+.upload-area:hover, .upload-area.dragover {
+    border-color: #4e73df;
+    background: rgba(78, 115, 223, 0.05);
+}
+
+.upload-icon {
+    font-size: 4rem;
+    color: #6c757d;
+}
+
+.upload-area:hover .upload-icon {
+    color: #4e73df;
+}
+
+.file-list-item {
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.file-list-item:hover {
+    border-left-color: #4e73df;
+    background-color: #f8f9fa;
+}
+
+.file-list-item.active {
+    border-left-color: #4e73df;
+    background-color: rgba(78, 115, 223, 0.1);
+}
+
+.progress {
+    height: 8px;
+}
+
+.badge {
+    font-size: 0.7em;
+}
+
+.analysis-result {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 修复步骤动画 */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.repairing {
+    animation: pulse 1.5s infinite;
+}
+
+/* 步骤指示器改进 */
+.step.completed .step-icon {
+    background: var(--primary-color) !important;
+}
+
+.step.active .step-icon {
+    background: var(--primary-color) !important;
+    box-shadow: 0 0 0 5px rgba(78, 115, 223, 0.2);
+}
+
+.step-line {
+    background: #e9ecef !important;
+}
