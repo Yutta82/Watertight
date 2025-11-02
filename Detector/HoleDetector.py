@@ -329,8 +329,8 @@ class HoleDetector:
         return valid_loops
         # return self.build_hole_loops()
 
-    def get_hole_info(self) -> Dict:
-        pass
+    def get_hole_loop(self):
+        return self.hole_loops
 
     def visual(self, show_original=True, highlight_holes=True, title=None):
         """使用vedo可视化孔洞检测结果（简化稳定版）"""
