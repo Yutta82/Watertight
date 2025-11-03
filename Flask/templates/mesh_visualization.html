@@ -166,20 +166,20 @@
                         <i class="fas fa-sliders-h me-2"></i>显示设置
                     </h6>
                     <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="wireframeToggle" checked>
+                        <input class="form-check-input" type="checkbox" id="wireframeToggle">
                         <label class="form-check-label text-white small" for="wireframeToggle">线框模式</label>
                     </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="vertexToggle">
-                        <label class="form-check-label text-white small" for="vertexToggle">显示顶点</label>
-                    </div>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="normalToggle">
-                        <label class="form-check-label text-white small" for="normalToggle">显示法线</label>
-                    </div>
+<!--                    <div class="form-check form-switch mb-2">-->
+<!--                        <input class="form-check-input" type="checkbox" id="vertexToggle">-->
+<!--                        <label class="form-check-label text-white small" for="vertexToggle">显示顶点</label>-->
+<!--                    </div>-->
+<!--                    <div class="form-check form-switch mb-3">-->
+<!--                        <input class="form-check-input" type="checkbox" id="normalToggle">-->
+<!--                        <label class="form-check-label text-white small" for="normalToggle">显示法线</label>-->
+<!--                    </div>-->
 
-                    <h6 class="text-uppercase text-white-50 mb-2 mt-4">渲染模式</h6>
-                    <select class="form-select form-select-sm bg-dark text-white border-dark" id="renderMode">
+                    <h6 class="text-uppercase text-white-50 mb-2 mt-4" hidden="hidden">渲染模式</h6>
+                    <select class="form-select form-select-sm bg-dark text-white border-dark" id="renderMode" hidden="hidden">
                         <option value="solid">实体渲染</option>
                         <option value="wireframe">线框渲染</option>
                         <option value="points">点云渲染</option>
@@ -432,18 +432,6 @@
                         </div>
                         <div class="card-body">
                             <div class="d-flex flex-wrap gap-2">
-                                <button class="btn btn-outline-primary" id="measureDistance">
-                                    <i class="fas fa-ruler me-2"></i>测量距离
-                                </button>
-                                <button class="btn btn-outline-success" id="detectDefects">
-                                    <i class="fas fa-search me-2"></i>缺陷检测
-                                </button>
-                                <button class="btn btn-outline-info" id="geometryAnalysis">
-                                    <i class="fas fa-chart-bar me-2"></i>几何分析
-                                </button>
-                                <button class="btn btn-outline-warning" id="crossSection">
-                                    <i class="fas fa-cut me-2"></i>剖面查看
-                                </button>
                                 <button class="btn btn-outline-dark" id="exportMesh">
                                     <i class="fas fa-download me-2"></i>导出模型
                                 </button>
