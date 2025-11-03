@@ -1141,35 +1141,6 @@ function resetUploadForm() {
 
 // 分析工具功能
 function setupAnalysisTools() {
-    document.getElementById('measureDistance').addEventListener('click', function() {
-        alert('测量距离功能 - 点击模型上的两个点来测量距离');
-        // 这里可以添加实际的测量逻辑
-    });
-
-    document.getElementById('detectDefects').addEventListener('click', function() {
-        if (!currentFileId) {
-            alert('请先加载一个模型');
-            return;
-        }
-
-        alert('开始检测模型缺陷...');
-        // 这里可以添加实际的缺陷检测逻辑
-    });
-
-    document.getElementById('geometryAnalysis').addEventListener('click', function() {
-        if (!currentMesh) {
-            alert('请先加载一个模型');
-            return;
-        }
-
-        alert('开始几何分析...');
-        // 这里可以添加实际的几何分析逻辑
-    });
-
-    document.getElementById('crossSection').addEventListener('click', function() {
-        alert('剖面查看功能 - 选择一个平面来查看模型内部');
-        // 这里可以添加实际的剖面查看逻辑
-    });
 
     document.getElementById('exportMesh').addEventListener('click', function() {
         if (!currentFileId) {
