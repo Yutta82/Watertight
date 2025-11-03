@@ -2,6 +2,139 @@
 
 {% block title %}Mesh可视化 - Mesh处理平台{% endblock %}
 
+{% block head %}
+<!-- Three.js 库 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- STL加载器 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+<!-- OBJ加载器 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<!-- 轨道控制器 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<!-- PLY加载器 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
+
+<style>
+/* 3D画布样式 */
+#meshCanvas {
+    width: 100%;
+    height: 500px;
+    background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%),
+                linear-gradient(-45deg, #f8f9fa 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f8f9fa 75%),
+                linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.canvas-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(248, 249, 250, 0.8);
+    z-index: 10;
+}
+
+.canvas-loaded .canvas-placeholder {
+    display: none;
+}
+
+.visualization-controls {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+.control-btn.active {
+    background: #4e73df;
+    color: white;
+}
+
+.stats-panel {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 100;
+}
+
+.upload-area {
+    border: 3px dashed #dee2e6;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    cursor: pointer;
+}
+
+.upload-area:hover, .upload-area.dragover {
+    border-color: #4e73df;
+    background: rgba(78, 115, 223, 0.05);
+}
+
+.upload-icon {
+    font-size: 4rem;
+    color: #6c757d;
+}
+
+.upload-area:hover .upload-icon {
+    color: #4e73df;
+}
+
+.file-list-item {
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.file-list-item:hover {
+    border-left-color: #4e73df;
+    background-color: #f8f9fa;
+}
+
+.file-list-item.active {
+    border-left-color: #4e73df;
+    background-color: rgba(78, 115, 223, 0.1);
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -45,12 +178,38 @@
                         <label class="form-check-label text-white small" for="normalToggle">显示法线</label>
                     </div>
 
-                    <h6 class="text-uppercase text-white-50 mb-2 mt-4">渲染质量</h6>
-                    <select class="form-select form-select-sm bg-dark text-white border-dark">
-                        <option>低质量</option>
-                        <option selected>中等质量</option>
-                        <option>高质量</option>
+                    <h6 class="text-uppercase text-white-50 mb-2 mt-4">渲染模式</h6>
+                    <select class="form-select form-select-sm bg-dark text-white border-dark" id="renderMode">
+                        <option value="solid">实体渲染</option>
+                        <option value="wireframe">线框渲染</option>
+                        <option value="points">点云渲染</option>
                     </select>
+
+                    <h6 class="text-uppercase text-white-50 mb-2 mt-4">材质</h6>
+                    <select class="form-select form-select-sm bg-dark text-white border-dark" id="materialType">
+                        <option value="standard">标准材质</option>
+                        <option value="phong">Phong材质</option>
+                        <option value="basic">基础材质</option>
+                    </select>
+
+                    <h6 class="text-uppercase text-white-50 mb-2 mt-4">背景颜色</h6>
+                    <input type="color" class="form-control form-control-sm" id="backgroundColor" value="#f8f9fa">
+
+                    <h6 class="text-uppercase text-white-50 mb-2 mt-4">模型颜色</h6>
+                    <input type="color" class="form-control form-control-sm" id="modelColor" value="#4e73df">
+                </div>
+
+                <!-- 当前文件信息 -->
+                <div class="px-3 mt-4" id="currentFileInfo" style="display: none;">
+                    <h6 class="text-uppercase text-white-50 mb-2">
+                        <i class="fas fa-info-circle me-2"></i>当前模型
+                    </h6>
+                    <div class="text-white small">
+                        <div class="mb-1" id="currentFileName">-</div>
+                        <div class="mb-1" id="currentFileVertices">顶点: -</div>
+                        <div class="mb-1" id="currentFileFaces">面片: -</div>
+                        <div class="mb-1" id="currentFileFormat">格式: -</div>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -62,51 +221,173 @@
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar">
                         <span class="navbar-toggler-icon"></span>
                     </button>
-                    
+
                     <div class="d-flex align-items-center">
                         <h4 class="mb-0 text-primary">
                             <i class="fas fa-eye me-2"></i>Mesh可视化
                         </h4>
                     </div>
+
+                    <div class="navbar-nav ms-auto">
+                        <button class="btn btn-outline-primary me-2" onclick="screenshot()">
+                            <i class="fas fa-camera me-2"></i>截图
+                        </button>
+                        <button class="btn btn-outline-success" onclick="resetView()">
+                            <i class="fas fa-rotate me-2"></i>重置视图
+                        </button>
+                    </div>
                 </div>
             </nav>
 
-            <!-- 3D视图区域 -->
+            <!-- 闪存消息 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
             <div class="row">
-                <div class="col-12 mb-4">
+                <!-- 3D视图区域 -->
+                <div class="col-lg-8 mb-4">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">3D视图</h5>
-                            <div class="btn-group">
-                                <button class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-rotate"></i> 重置视图
-                                </button>
-                                <button class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-screenshot"></i> 截图
-                                </button>
+                            <h5 class="card-title mb-0" id="canvasTitle">3D可视化</h5>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoRotateToggle">
+                                <label class="form-check-label" for="autoRotateToggle">自动旋转</label>
                             </div>
                         </div>
                         <div class="card-body p-0">
-                            <!-- 3D画布占位 -->
-                            <div id="meshCanvas" class="bg-light" style="height: 500px; display: flex; align-items: center; justify-content: center;">
-                                <div class="text-center text-muted">
-                                    <i class="fas fa-cube fa-4x mb-3"></i>
-                                    <h5>3D可视化区域</h5>
-                                    <p>上传或选择模型开始可视化</p>
-                                    <button class="btn btn-primary mt-2">
-                                        <i class="fas fa-folder-open me-2"></i>选择模型
-                                    </button>
+                            <div id="meshCanvas">
+                                <div class="canvas-placeholder">
+                                    <i class="fas fa-cube fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted">3D可视化区域</h5>
+                                    <p class="text-muted">上传或选择模型开始可视化</p>
                                 </div>
+
+                                <!-- 加载指示器 -->
+                                <div id="loadingIndicator" class="loading-overlay" style="display: none;">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary mb-3" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        <h6 class="text-primary">正在加载模型...</h6>
+                                        <p class="small text-muted">请稍候</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 可视化控制按钮 -->
+                            <div class="visualization-controls">
+                                <button class="control-btn" id="viewFront" title="前视图">
+                                    <i class="fas fa-cube"></i>
+                                </button>
+                                <button class="control-btn" id="viewTop" title="顶视图">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button class="control-btn" id="viewSide" title="侧视图">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                                <button class="control-btn" id="viewOrtho" title="正交/透视视图">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+
+                            <!-- 统计信息面板 -->
+                            <div class="stats-panel">
+                                <div>顶点: <span id="statsVertices">0</span></div>
+                                <div>面片: <span id="statsFaces">0</span></div>
+                                <div>FPS: <span id="statsFPS">0</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 模型信息和控制 -->
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card border-0 shadow-sm h-100">
+                <!-- 控制面板 -->
+                <div class="col-lg-4 mb-4">
+                    <!-- 文件上传区域 -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-upload me-2 text-primary"></i>上传模型
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <form id="uploadForm" enctype="multipart/form-data">
+                                <div class="upload-area text-center py-4" id="dropZone">
+                                    <input type="file" id="meshFile" name="mesh_file" accept=".obj,.stl,.ply,.off,.3ds,.fbx" style="display: none;">
+
+                                    <div id="uploadPrompt">
+                                        <i class="fas fa-cloud-upload-alt upload-icon mb-3"></i>
+                                        <p class="card-text text-muted mb-3">
+                                            支持 OBJ, STL, PLY, OFF, 3DS, FBX 等格式
+                                        </p>
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('meshFile').click()">
+                                            <i class="fas fa-folder-open me-2"></i>选择文件
+                                        </button>
+                                        <div class="mt-2">
+                                            <small class="text-muted">或将文件拖拽到此处</small>
+                                        </div>
+                                    </div>
+
+                                    <div id="uploadProgress" style="display: none;">
+                                        <div class="spinner-border text-primary mb-2" role="status">
+                                            <span class="visually-hidden">上传中...</span>
+                                        </div>
+                                        <p class="small text-muted">文件上传中...</p>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 已上传文件列表 -->
+                    {% if uploaded_files %}
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-folder me-2 text-info"></i>已上传的文件
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush" id="fileList">
+                                {% for file_id, file_info in uploaded_files.items() %}
+                                <div class="list-group-item file-list-item" data-file-id="{{ file_id }}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-cube text-primary me-3"></i>
+                                            <div>
+                                                <h6 class="mb-1">{{ file_info.original_name }}</h6>
+                                                <small class="text-muted">
+                                                   {{ file_info.get('file_info', {}).get('format', 'Unknown') }} |
+                                                    {{ file_info.upload_time }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="loadMeshFile('{{ file_id }}')">
+                                                <i class="fas fa-eye me-1"></i>查看
+                                            </button>
+                                            <a href="{{ url_for('delete_mesh', file_id=file_id) }}" class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-trash me-1"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- 模型信息 -->
+                    <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white">
                             <h6 class="card-title mb-0">
                                 <i class="fas fa-info-circle me-2 text-info"></i>模型信息
@@ -116,53 +397,55 @@
                             <div class="row">
                                 <div class="col-6 mb-3">
                                     <small class="text-muted d-block">模型名称</small>
-                                    <strong>未选择模型</strong>
+                                    <strong id="infoName">-</strong>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <small class="text-muted d-block">文件格式</small>
-                                    <strong>-</strong>
+                                    <strong id="infoFormat">-</strong>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <small class="text-muted d-block">顶点数量</small>
-                                    <strong>-</strong>
+                                    <strong id="infoVertices">-</strong>
                                 </div>
                                 <div class="col-6 mb-3">
-                                    <small class="text-muted d-block">面片数量</strong>
-                                    <strong>-</strong>
+                                    <small class="text-muted d-block">面片数量</small>
+                                    <strong id="infoFaces">-</strong>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-12">
                                     <small class="text-muted d-block">边界框</small>
-                                    <strong>-</strong>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted d-block">文件大小</small>
-                                    <strong>-</strong>
+                                    <strong id="infoBoundingBox">-</strong>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6 mb-4">
-                    <div class="card border-0 shadow-sm h-100">
+            <!-- 分析工具 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white">
-                            <h6 class="card-title mb-0">
+                            <h5 class="card-title mb-0">
                                 <i class="fas fa-tools me-2 text-warning"></i>分析工具
-                            </h6>
+                            </h5>
                         </div>
                         <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-outline-primary">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-outline-primary" id="measureDistance">
                                     <i class="fas fa-ruler me-2"></i>测量距离
                                 </button>
-                                <button class="btn btn-outline-success">
+                                <button class="btn btn-outline-success" id="detectDefects">
                                     <i class="fas fa-search me-2"></i>缺陷检测
                                 </button>
-                                <button class="btn btn-outline-info">
+                                <button class="btn btn-outline-info" id="geometryAnalysis">
                                     <i class="fas fa-chart-bar me-2"></i>几何分析
                                 </button>
-                                <button class="btn btn-outline-warning">
+                                <button class="btn btn-outline-warning" id="crossSection">
                                     <i class="fas fa-cut me-2"></i>剖面查看
+                                </button>
+                                <button class="btn btn-outline-dark" id="exportMesh">
+                                    <i class="fas fa-download me-2"></i>导出模型
                                 </button>
                             </div>
                         </div>
@@ -172,4 +455,767 @@
         </main>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Three.js全局变量
+let scene, camera, renderer, controls;
+let currentMesh = null;
+let currentFileId = null;
+let isOrthographic = false;
+let stats = {
+    vertices: 0,
+    faces: 0,
+    fps: 0
+};
+
+// 初始化Three.js场景
+function initThreeJS() {
+    // 创建场景
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf8f9fa);
+
+    // 创建相机
+    const canvasContainer = document.getElementById('meshCanvas');
+    const width = canvasContainer.clientWidth;
+    const height = canvasContainer.clientHeight;
+
+    camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    camera.position.z = 5;
+
+    // 创建渲染器
+    renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        preserveDrawingBuffer: true // 保留绘图缓冲区，避免重绘问题
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    canvasContainer.appendChild(renderer.domElement);
+
+    // 添加轨道控制器 - 关键修改
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = true;
+
+    // 添加控制器变化监听，确保交互状态正确
+    controls.addEventListener('change', function() {
+        // 用户正在交互，可以在这里添加一些逻辑
+        // 比如禁用自动旋转等
+    });
+
+    controls.addEventListener('start', function() {
+        // 用户开始交互
+        console.log('用户开始交互');
+    });
+
+    controls.addEventListener('end', function() {
+        // 用户结束交互
+        console.log('用户结束交互');
+    });
+
+    // 添加灯光
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    // 添加坐标轴辅助
+    const axesHelper = new THREE.AxesHelper(2);
+    scene.add(axesHelper);
+
+    // 添加网格辅助
+    const gridHelper = new THREE.GridHelper(10, 10);
+    scene.add(gridHelper);
+
+    // 窗口大小变化时调整渲染器
+    window.addEventListener('resize', onWindowResize);
+
+    // 开始动画循环
+    animate();
+}
+
+// 窗口大小变化处理
+function onWindowResize() {
+    const canvasContainer = document.getElementById('meshCanvas');
+    const width = canvasContainer.clientWidth;
+    const height = canvasContainer.clientHeight;
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+}
+
+// 动画循环
+// 修改动画循环，移除不必要的重置
+function animate() {
+    requestAnimationFrame(animate);
+
+    // 只有在启用自动旋转时才更新旋转
+    if (document.getElementById('autoRotateToggle').checked && !controls.enabled) {
+        // 注意：这里我们检查controls.enabled，确保在用户交互时不自动旋转
+        scene.rotation.y += 0.005;
+    }
+
+    // 更新控制器 - 这是必要的，用于平滑阻尼效果
+    if (controls && controls.enabled) {
+        controls.update();
+    }
+
+    // 更新FPS统计
+    updateStats();
+
+    // 渲染场景
+    renderer.render(scene, camera);
+}
+
+// 更新统计信息
+function updateStats() {
+    stats.fps = Math.round(1000 / renderer.info.render.frameTime);
+    document.getElementById('statsFPS').textContent = stats.fps;
+}
+
+// 加载Mesh文件
+function loadMeshFile(fileId) {
+    if (!fileId) {
+        alert('请先选择一个文件');
+        return;
+    }
+
+    // 显示加载状态
+    const canvasContainer = document.getElementById('meshCanvas');
+    canvasContainer.classList.remove('canvas-loaded');
+
+    // 获取文件信息
+    fetch(`/get-mesh-data/${fileId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentFileId = fileId;
+                const meshData = data.mesh_data;
+
+                // 更新模型信息
+                updateModelInfo(meshData);
+
+                // 根据文件类型加载模型
+                loadModelByType(meshData.file_url, meshData.format);
+
+                // 高亮选中的文件
+                document.querySelectorAll('.file-list-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                document.querySelector(`[data-file-id="${fileId}"]`).classList.add('active');
+
+                // 更新侧边栏信息
+                updateSidebarInfo(meshData);
+            } else {
+                throw new Error(data.error);
+            }
+        })
+        .catch(error => {
+            alert('加载文件失败: ' + error.message);
+        });
+}
+
+function centerModelOnLoad(mesh) {
+    const box = new THREE.Box3().setFromObject(mesh);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+
+    // 将模型移动到原点
+    mesh.position.x = -center.x;
+    mesh.position.y = -center.y;
+    mesh.position.z = -center.z;
+
+    // 调整相机位置以完整显示模型，但不要重置控制器
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = camera.fov * (Math.PI / 180);
+    let cameraZ = Math.abs(maxDim / Math.sin(fov / 2));
+
+    // 设置相机位置，但不更新控制器目标
+    camera.position.z = cameraZ * 1.5;
+
+    // 更新边界框信息
+    document.getElementById('infoBoundingBox').textContent =
+        `${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}`;
+}
+
+// 添加加载指示器函数
+function showLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'flex';
+    }
+}
+
+function hideLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'none';
+    }
+}
+// 根据文件类型加载模型
+function loadModelByType(fileUrl, format) {
+    // 清除现有模型
+    if (currentMesh) {
+        scene.remove(currentMesh);
+        currentMesh = null;
+    }
+
+    // 创建加载器
+    let loader;
+
+    switch (format.toLowerCase()) {
+        case 'stl':
+            loader = new THREE.STLLoader();
+            break;
+        case 'obj':
+            loader = new THREE.OBJLoader();
+            break;
+        case 'ply':
+            loader = new THREE.PLYLoader();
+            break;
+        default:
+            // 对于不支持的格式，创建一个示例几何体
+            createSampleGeometry();
+            return;
+    }
+
+    // 显示加载状态
+    showLoadingIndicator();
+
+    // 加载模型
+    loader.load(fileUrl, function(object) {
+        let geometry, material;
+
+        if (format.toLowerCase() === 'stl') {
+            geometry = object;
+            material = new THREE.MeshPhongMaterial({
+                color: document.getElementById('modelColor').value,
+                specular: 0x111111,
+                shininess: 200
+            });
+            currentMesh = new THREE.Mesh(geometry, material);
+        } else if (format.toLowerCase() === 'obj') {
+            // OBJ文件可能包含多个网格
+            object.traverse(function(child) {
+                if (child instanceof THREE.Mesh) {
+                    child.material = new THREE.MeshPhongMaterial({
+                        color: document.getElementById('modelColor').value
+                    });
+                }
+            });
+            currentMesh = object;
+        }
+        else if (format.toLowerCase() === 'ply') {
+            // PLY文件返回的是几何体
+            geometry = object;
+
+            // 计算顶点法线（如果PLY文件不包含法线）
+            if (!geometry.attributes.normal) {
+                geometry.computeVertexNormals();
+            }
+
+            material = new THREE.MeshPhongMaterial({
+                color: document.getElementById('modelColor').value,
+                specular: 0x111111,
+                shininess: 200,
+                side: THREE.DoubleSide  // 对于PLY文件，可能需要双面渲染
+            });
+
+            currentMesh = new THREE.Mesh(geometry, material);
+        }
+
+        // 添加到场景
+        scene.add(currentMesh);
+
+        // 居中模型，但不重置用户交互
+        centerModelOnLoad(currentMesh);
+
+        // 更新统计信息
+        updateMeshStats(currentMesh);
+
+        // 标记画布为已加载
+        const canvasContainer = document.getElementById('meshCanvas');
+        canvasContainer.classList.add('canvas-loaded');
+
+        // 隐藏加载指示器
+        hideLoadingIndicator();
+
+    },
+    // 加载进度回调
+    function(xhr) {
+        if (xhr.lengthComputable) {
+            const percentComplete = xhr.loaded / xhr.total * 100;
+            console.log('模型加载进度: ' + percentComplete.toFixed(2) + '%');
+        }
+    },
+    // 加载错误回调
+    function(error) {
+        console.error('加载模型时出错:', error);
+        alert('加载模型失败，将显示示例模型');
+        createSampleGeometry();
+        hideLoadingIndicator();
+    });
+}
+
+// 创建示例几何体（用于演示）
+function createSampleGeometry() {
+    const geometry = new THREE.BoxGeometry(2, 2, 2);
+    const material = new THREE.MeshPhongMaterial({
+        color: document.getElementById('modelColor').value,
+        wireframe: document.getElementById('wireframeToggle').checked
+    });
+
+    currentMesh = new THREE.Mesh(geometry, material);
+    scene.add(currentMesh);
+
+    // 标记画布为已加载
+    const canvasContainer = document.getElementById('meshCanvas');
+    canvasContainer.classList.add('canvas-loaded');
+
+    // 更新统计信息
+    updateMeshStats(currentMesh);
+}
+
+// 居中模型
+function centerModel(mesh) {
+    const box = new THREE.Box3().setFromObject(mesh);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+
+    // 将模型移动到原点
+    mesh.position.x = -center.x;
+    mesh.position.y = -center.y;
+    mesh.position.z = -center.z;
+
+    // 调整相机位置以完整显示模型
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = camera.fov * (Math.PI / 180);
+    let cameraZ = Math.abs(maxDim / Math.sin(fov / 2));
+
+    camera.position.z = cameraZ * 1.5;
+    controls.update();
+
+    // 更新边界框信息
+    document.getElementById('infoBoundingBox').textContent =
+        `${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}`;
+}
+
+// 更新网格统计信息
+function updateMeshStats(mesh) {
+    if (mesh.geometry) {
+        stats.vertices = mesh.geometry.attributes.position.count;
+        stats.faces = mesh.geometry.index ? mesh.geometry.index.count / 3 : 0;
+    } else {
+        // 对于组对象，可能需要遍历所有子网格
+        stats.vertices = 0;
+        stats.faces = 0;
+        mesh.traverse(function(child) {
+            if (child.geometry) {
+                stats.vertices += child.geometry.attributes.position.count;
+                stats.faces += child.geometry.index ? child.geometry.index.count / 3 : 0;
+            }
+        });
+    }
+
+    document.getElementById('statsVertices').textContent = stats.vertices.toLocaleString();
+    document.getElementById('statsFaces').textContent = stats.faces.toLocaleString();
+
+    // 更新模型信息面板
+    document.getElementById('infoVertices').textContent = stats.vertices.toLocaleString();
+    document.getElementById('infoFaces').textContent = stats.faces.toLocaleString();
+}
+
+// 更新模型信息
+function updateModelInfo(meshData) {
+    document.getElementById('canvasTitle').textContent = `3D可视化 - ${meshData.filename}`;
+    document.getElementById('infoName').textContent = meshData.filename;
+    document.getElementById('infoFormat').textContent = meshData.format;
+    document.getElementById('infoVertices').textContent = meshData.vertices.toLocaleString();
+    document.getElementById('infoFaces').textContent = meshData.faces.toLocaleString();
+}
+
+// 更新侧边栏信息
+function updateSidebarInfo(meshData) {
+    document.getElementById('currentFileInfo').style.display = 'block';
+    document.getElementById('currentFileName').textContent = meshData.filename;
+    document.getElementById('currentFileVertices').textContent = `顶点: ${meshData.vertices.toLocaleString()}`;
+    document.getElementById('currentFileFaces').textContent = `面片: ${meshData.faces.toLocaleString()}`;
+    document.getElementById('currentFileFormat').textContent = `格式: ${meshData.format}`;
+}
+
+// 重置视图
+function resetView() {
+    if (currentMesh) {
+        const box = new THREE.Box3().setFromObject(currentMesh);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+
+        // 重置模型位置
+        currentMesh.position.x = -center.x;
+        currentMesh.position.y = -center.y;
+        currentMesh.position.z = -center.z;
+
+        // 重置相机
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / Math.sin(fov / 2));
+
+        camera.position.set(0, 0, cameraZ * 1.5);
+        camera.lookAt(0, 0, 0);
+
+        // 重置控制器
+        controls.reset();
+    } else {
+        camera.position.set(0, 0, 5);
+        controls.reset();
+    }
+}
+// 截图功能
+function screenshot() {
+    renderer.render(scene, camera);
+    const link = document.createElement('a');
+    link.download = `mesh-screenshot-${new Date().getTime()}.png`;
+    link.href = renderer.domElement.toDataURL();
+    link.click();
+}
+
+// 视图控制
+function setupViewControls() {
+    document.getElementById('viewFront').addEventListener('click', () => {
+        // 保存当前模型位置
+        const currentPosition = currentMesh ? currentMesh.position.clone() : new THREE.Vector3();
+
+        // 设置相机位置
+        camera.position.set(0, 0, 5);
+        camera.lookAt(0, 0, 0);
+
+        // 如果存在模型，保持其当前位置
+        if (currentMesh) {
+            currentMesh.position.copy(currentPosition);
+        }
+
+        controls.update();
+    });
+
+    document.getElementById('viewTop').addEventListener('click', () => {
+        const currentPosition = currentMesh ? currentMesh.position.clone() : new THREE.Vector3();
+
+        camera.position.set(0, 5, 0);
+        camera.lookAt(0, 0, 0);
+
+        if (currentMesh) {
+            currentMesh.position.copy(currentPosition);
+        }
+
+        controls.update();
+    });
+
+    document.getElementById('viewSide').addEventListener('click', () => {
+        const currentPosition = currentMesh ? currentMesh.position.clone() : new THREE.Vector3();
+
+        camera.position.set(5, 0, 0);
+        camera.lookAt(0, 0, 0);
+
+        if (currentMesh) {
+            currentMesh.position.copy(currentPosition);
+        }
+
+        controls.update();
+    });
+
+    document.getElementById('viewOrtho').addEventListener('click', () => {
+        const canvasContainer = document.getElementById('meshCanvas');
+        const width = canvasContainer.clientWidth;
+        const height = canvasContainer.clientHeight;
+
+        if (isOrthographic) {
+            // 切换到透视相机
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.copy(controls.target).add(new THREE.Vector3(0, 0, 5));
+            isOrthographic = false;
+        } else {
+            // 切换到正交相机
+            const aspect = width / height;
+            const frustumSize = 10;
+            camera = new THREE.OrthographicCamera(
+                frustumSize * aspect / -2,
+                frustumSize * aspect / 2,
+                frustumSize / 2,
+                frustumSize / -2,
+                0.1,
+                1000
+            );
+            camera.position.copy(controls.target).add(new THREE.Vector3(0, 0, 5));
+            isOrthographic = true;
+        }
+
+        controls.object = camera;
+        controls.update();
+    });
+}
+
+// 设置控制面板事件
+function setupControlPanel() {
+    // 线框模式切换
+    document.getElementById('wireframeToggle').addEventListener('change', function() {
+        if (currentMesh) {
+            if (currentMesh.material) {
+                currentMesh.material.wireframe = this.checked;
+            } else {
+                // 对于组对象，遍历所有子网格
+                currentMesh.traverse(function(child) {
+                    if (child.material) {
+                        child.material.wireframe = this.checked;
+                    }
+                }.bind(this));
+            }
+        }
+    });
+
+    // 渲染模式切换
+    document.getElementById('renderMode').addEventListener('change', function() {
+        if (!currentMesh) return;
+
+        const mode = this.value;
+
+        if (currentMesh.material) {
+            switch(mode) {
+                case 'solid':
+                    currentMesh.material.wireframe = false;
+                    break;
+                case 'wireframe':
+                    currentMesh.material.wireframe = true;
+                    break;
+                case 'points':
+                    // 切换到点渲染模式
+                    currentMesh.material = new THREE.PointsMaterial({
+                        color: document.getElementById('modelColor').value,
+                        size: 0.1
+                    });
+                    break;
+            }
+        }
+    });
+
+    // 材质类型切换
+    document.getElementById('materialType').addEventListener('change', function() {
+        if (!currentMesh) return;
+
+        const color = document.getElementById('modelColor').value;
+        const isWireframe = document.getElementById('wireframeToggle').checked;
+
+        let newMaterial;
+
+        switch(this.value) {
+            case 'standard':
+                newMaterial = new THREE.MeshStandardMaterial({
+                    color: color,
+                    wireframe: isWireframe
+                });
+                break;
+            case 'phong':
+                newMaterial = new THREE.MeshPhongMaterial({
+                    color: color,
+                    wireframe: isWireframe
+                });
+                break;
+            case 'basic':
+                newMaterial = new THREE.MeshBasicMaterial({
+                    color: color,
+                    wireframe: isWireframe
+                });
+                break;
+        }
+
+        if (currentMesh.material) {
+            currentMesh.material = newMaterial;
+        } else {
+            // 对于组对象，遍历所有子网格
+            currentMesh.traverse(function(child) {
+                if (child.material) {
+                    child.material = newMaterial;
+                }
+            });
+        }
+    });
+
+    // 背景颜色更改
+    document.getElementById('backgroundColor').addEventListener('input', function() {
+        scene.background = new THREE.Color(this.value);
+    });
+
+    // 模型颜色更改
+    document.getElementById('modelColor').addEventListener('input', function() {
+        if (currentMesh) {
+            if (currentMesh.material) {
+                currentMesh.material.color = new THREE.Color(this.value);
+            } else {
+                // 对于组对象，遍历所有子网格
+                currentMesh.traverse(function(child) {
+                    if (child.material) {
+                        child.material.color = new THREE.Color(this.value);
+                    }
+                }.bind(this));
+            }
+        }
+    });
+}
+
+// 文件上传功能
+function setupFileUpload() {
+    const fileInput = document.getElementById('meshFile');
+    const dropZone = document.getElementById('dropZone');
+
+    // 文件选择事件
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            uploadFile(this.files[0]);
+        }
+    });
+
+    // 拖放功能
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', function() {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+
+        if (e.dataTransfer.files.length > 0) {
+            uploadFile(e.dataTransfer.files[0]);
+        }
+    });
+}
+
+// 上传文件
+function uploadFile(file) {
+    // 验证文件类型
+    const allowedTypes = ['.obj', '.stl', '.ply', '.off', '.3ds', '.fbx'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!allowedTypes.includes(fileExtension)) {
+        alert('不支持的文件格式。请上传 OBJ, STL, PLY, OFF, 3DS, FBX 格式的文件。');
+        return;
+    }
+
+    // 显示上传进度
+    document.getElementById('uploadPrompt').style.display = 'none';
+    document.getElementById('uploadProgress').style.display = 'block';
+
+    // 创建FormData
+    const formData = new FormData();
+    formData.append('mesh_file', file);
+
+    // 使用AJAX上传文件
+    const xhr = new XMLHttpRequest();
+
+    // 上传完成
+    xhr.addEventListener('load', function() {
+        const response = JSON.parse(xhr.responseText);
+
+        if (response.success) {
+            // 刷新页面以显示新文件
+            location.reload();
+        } else {
+            alert('上传失败: ' + response.error);
+            resetUploadForm();
+        }
+    });
+
+    // 上传错误
+    xhr.addEventListener('error', function() {
+        alert('上传过程中发生错误');
+        resetUploadForm();
+    });
+
+    // 发送请求
+    xhr.open('POST', '{{ url_for("mesh_visualization") }}');
+    xhr.send(formData);
+}
+
+// 重置上传表单
+function resetUploadForm() {
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('uploadPrompt').style.display = 'block';
+    document.getElementById('meshFile').value = '';
+}
+
+// 分析工具功能
+function setupAnalysisTools() {
+    document.getElementById('measureDistance').addEventListener('click', function() {
+        alert('测量距离功能 - 点击模型上的两个点来测量距离');
+        // 这里可以添加实际的测量逻辑
+    });
+
+    document.getElementById('detectDefects').addEventListener('click', function() {
+        if (!currentFileId) {
+            alert('请先加载一个模型');
+            return;
+        }
+
+        alert('开始检测模型缺陷...');
+        // 这里可以添加实际的缺陷检测逻辑
+    });
+
+    document.getElementById('geometryAnalysis').addEventListener('click', function() {
+        if (!currentMesh) {
+            alert('请先加载一个模型');
+            return;
+        }
+
+        alert('开始几何分析...');
+        // 这里可以添加实际的几何分析逻辑
+    });
+
+    document.getElementById('crossSection').addEventListener('click', function() {
+        alert('剖面查看功能 - 选择一个平面来查看模型内部');
+        // 这里可以添加实际的剖面查看逻辑
+    });
+
+    document.getElementById('exportMesh').addEventListener('click', function() {
+        if (!currentFileId) {
+            alert('没有可导出的模型');
+            return;
+        }
+
+        window.open(`/download-mesh/${currentFileId}`, '_blank');
+    });
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化Three.js
+    initThreeJS();
+
+    // 设置各种控制
+    setupViewControls();
+    setupControlPanel();
+    setupFileUpload();
+    setupAnalysisTools();
+
+    <!-- 在JavaScript部分，修改这一行： -->
+    const uploadedFiles = {{ uploaded_files | tojson }};
+
+    <!-- 如果有其他地方访问 file_info，使用安全的方式 -->
+    {% if uploaded_files %}
+        {% for file_id, file_info in uploaded_files.items() %}
+            <!-- 使用 .get() 方法安全访问 -->
+            {{ file_info.get('file_info', {}).get('vertices', 0) }}
+            {{ file_info.get('file_info', {}).get('faces', 0) }}
+            {{ file_info.get('file_info', {}).get('format', 'Unknown') }}
+        {% endfor %}
+    {% endif %}
+});
+</script>
 {% endblock %}

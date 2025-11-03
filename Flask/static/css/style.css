@@ -244,3 +244,221 @@ main {
 .step-line {
     background: #e9ecef !important;
 }
+/* 3D可视化相关样式 */
+#meshCanvas {
+    width: 100%;
+    height: 500px;
+    background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%),
+                linear-gradient(-45deg, #f8f9fa 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f8f9fa 75%),
+                linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.canvas-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(248, 249, 250, 0.8);
+    z-index: 10;
+}
+
+.canvas-loaded .canvas-placeholder {
+    display: none;
+}
+
+.visualization-controls {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+.control-btn.active {
+    background: #4e73df;
+    color: white;
+}
+
+.stats-panel {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 100;
+}
+
+/* 文件上传相关样式 */
+.upload-area {
+    border: 3px dashed #dee2e6;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    cursor: pointer;
+}
+
+.upload-area:hover, .upload-area.dragover {
+    border-color: #4e73df;
+    background: rgba(78, 115, 223, 0.05);
+}
+
+.upload-icon {
+    font-size: 4rem;
+    color: #6c757d;
+}
+
+.upload-area:hover .upload-icon {
+    color: #4e73df;
+}
+
+.file-list-item {
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.file-list-item:hover {
+    border-left-color: #4e73df;
+    background-color: #f8f9fa;
+}
+
+.file-list-item.active {
+    border-left-color: #4e73df;
+    background-color: rgba(78, 115, 223, 0.1);
+}
+
+/* 侧边栏样式 */
+#sidebar {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar .nav-link {
+    color: #b7c0cd;
+    padding: 12px 20px;
+    margin: 2px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.sidebar .nav-link.active {
+    color: #fff;
+    background: linear-gradient(45deg, #4e73df, #224abe);
+    box-shadow: 0 4px 15px rgba(78, 115, 223, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        z-index: 1000;
+        transition: left 0.3s ease;
+    }
+
+    #sidebar.show {
+        left: 0;
+    }
+
+    .visualization-controls {
+        top: 10px;
+        right: 10px;
+    }
+
+    .stats-panel {
+        bottom: 10px;
+        left: 10px;
+    }
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: 8px;
+}
+
+/* 确保Three.js画布正确显示 */
+#meshCanvas {
+    position: relative;
+    width: 100%;
+    height: 500px;
+}
+
+#meshCanvas canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.canvas-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(248, 249, 250, 0.8);
+    z-index: 10;
+}
+
+.canvas-loaded .canvas-placeholder {
+    display: none;
+}

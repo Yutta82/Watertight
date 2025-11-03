@@ -16,36 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 模拟3D画布交互
-    const meshCanvas = document.getElementById('meshCanvas');
-    if (meshCanvas) {
-        meshCanvas.addEventListener('click', function() {
-            this.innerHTML = `
-                <div class="text-center text-muted">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">加载中...</span>
-                    </div>
-                    <h5>加载3D模型...</h5>
-                    <p>正在初始化WebGL渲染器</p>
-                </div>
-            `;
-
-            // 模拟加载过程
-            setTimeout(() => {
-                this.innerHTML = `
-                    <div class="text-center text-success">
-                        <i class="fas fa-check-circle fa-3x mb-3"></i>
-                        <h5>模型加载成功！</h5>
-                        <p>使用鼠标进行旋转、缩放操作</p>
-                        <button class="btn btn-outline-primary mt-2" onclick="resetView()">
-                            <i class="fas fa-rotate me-2"></i>重置视图
-                        </button>
-                    </div>
-                `;
-            }, 2000);
-        });
-    }
-
     // 修复流程步骤交互
     const steps = document.querySelectorAll('.step');
     steps.forEach((step, index) => {

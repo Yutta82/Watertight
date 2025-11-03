@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, flash, redirect, url_for, send_from_directory
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -6,7 +6,7 @@ import tempfile
 import shutil
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # 用于flash消息
+app.secret_key = 'your-secret-key-here'
 
 # 配置文件上传
 UPLOAD_FOLDER = 'uploads'
@@ -51,7 +51,7 @@ sidebar_items = [
     {"name": "Mesh修补", "icon": "🔧", "url": "/mesh-repair", "active": False}
 ]
 
-# 存储上传的文件信息（在实际应用中应该使用数据库）
+# 存储上传的文件信息
 uploaded_files = {}
 
 
@@ -66,12 +66,59 @@ def index():
                            uploaded_files=uploaded_files)
 
 
-@app.route('/mesh-visualization')
+@app.route('/mesh-visualization', methods=['GET', 'POST'])
 def mesh_visualization():
     items = sidebar_items.copy()
     items[0]["active"] = False
     items[1]["active"] = True
     items[2]["active"] = False
+
+    if request.method == 'POST':
+        # 处理文件上传
+        if 'mesh_file' not in request.files:
+            flash('没有选择文件', 'error')
+            return redirect(request.url)
+
+        file = request.files['mesh_file']
+
+        if file.filename == '':
+            flash('没有选择文件', 'error')
+            return redirect(request.url)
+
+        if file and allowed_file(file.filename):
+            # 生成唯一文件名
+            file_id = str(uuid.uuid4())
+            filename = secure_filename(file.filename)
+            file_ext = filename.rsplit('.', 1)[1].lower()
+            unique_filename = f"{file_id}.{file_ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+
+            # 保存文件
+            file.save(filepath)
+
+            # 获取文件信息 - 这里添加了file_info
+            file_info = get_file_info(filepath)
+
+            # 存储文件信息 - 包含file_info
+            uploaded_files[file_id] = {
+                'original_name': filename,
+                'saved_name': unique_filename,
+                'filepath': filepath,
+                'file_info': file_info,  # 添加这一行
+                'upload_time': '刚刚'
+            }
+
+            flash(f'文件 "{filename}" 上传成功！', 'success')
+            return jsonify({
+                'success': True,
+                'file_id': file_id,
+                'filename': filename,
+                'file_info': file_info  # 添加这一行
+            })
+        else:
+            flash('不支持的文件格式。请上传 OBJ, STL, PLY, OFF, 3DS, FBX 格式的文件。', 'error')
+            return jsonify({'success': False, 'error': '不支持的文件格式'})
+
     return render_template('mesh_visualization.html',
                            sidebar_items=items,
                            uploaded_files=uploaded_files)
@@ -135,6 +182,37 @@ def mesh_repair():
     return render_template('mesh_repair.html',
                            sidebar_items=items,
                            uploaded_files=uploaded_files)
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """提供上传的文件"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+@app.route('/get-mesh-data/<file_id>')
+def get_mesh_data(file_id):
+    """获取mesh文件数据用于可视化"""
+    if file_id not in uploaded_files:
+        return jsonify({'success': False, 'error': '文件不存在'})
+
+    file_info = uploaded_files[file_id]
+
+    # 在实际应用中，这里应该解析mesh文件并返回顶点、面片等数据
+    # 现在返回模拟数据
+    import random
+    mesh_data = {
+        'vertices': file_info.get('file_info', {}).get('vertices', random.randint(1000, 100000)),
+        'faces': file_info.get('file_info', {}).get('faces', random.randint(2000, 200000)),
+        'file_url': f"/uploads/{file_info['saved_name']}",
+        'filename': file_info['original_name'],
+        'format': file_info.get('file_info', {}).get('format', file_info['saved_name'].split('.')[-1].upper())
+    }
+
+    return jsonify({
+        'success': True,
+        'mesh_data': mesh_data
+    })
 
 
 @app.route('/analyze-mesh/<file_id>')
