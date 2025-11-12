@@ -113,3 +113,116 @@ function simulateFileUpload() {
 function analyzeMesh() {
     alert('开始分析网格几何特征...');
 }
+
+// 修复mesh文件
+function repairMesh() {
+    if (!currentFileId) {
+        alert('请先选择一个文件');
+        return;
+    }
+
+    // 显示修复进度
+    document.getElementById('repairControls').style.display = 'none';
+    document.getElementById('repairProgress').style.display = 'block';
+
+    // 获取修复选项
+    const repairOptions = {
+        hole_filling: document.getElementById('holeFilling').checked,
+        self_intersection: document.getElementById('selfIntersection').checked,
+        manifold_check: document.getElementById('manifoldCheck').checked,
+        smoothing: document.getElementById('smoothing').checked,
+        strength: parseInt(document.getElementById('repairStrength').value)
+    };
+
+    // 发送修复请求
+    fetch(`/repair-mesh/${currentFileId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            options: repairOptions
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('repairProgress').style.display = 'none';
+        document.getElementById('repairControls').style.display = 'block';
+
+        if (data.success) {
+            // 显示修复结果
+            displayRepairResults(data.result);
+
+            // 启用下载按钮
+            const downloadButton = document.getElementById('downloadButton');
+            downloadButton.disabled = false;
+            downloadButton.onclick = function() {
+                downloadRepairedMesh(data.result.repaired_file_id);
+            };
+
+            // 添加查看修复后模型的按钮
+            addViewRepairedButton(data.result.repaired_file_id, data.result.repaired_filename);
+
+            updateStep(4); // 进入结果验证步骤
+        } else {
+            alert('修复失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        document.getElementById('repairProgress').style.display = 'none';
+        document.getElementById('repairControls').style.display = 'block';
+        alert('修复过程中发生错误: ' + error.message);
+    });
+}
+
+// 下载修复后的模型
+function downloadRepairedMesh(fileId) {
+    if (fileId) {
+        window.open(`/download-repaired-mesh/${fileId}`, '_blank');
+    } else {
+        alert('没有可下载的修复文件');
+    }
+}
+
+// 添加查看修复后模型的按钮
+function addViewRepairedButton(fileId, filename) {
+    const repairControls = document.getElementById('repairControls');
+
+    // 移除已存在的查看按钮
+    const existingViewButton = document.getElementById('viewRepairedButton');
+    if (existingViewButton) {
+        existingViewButton.remove();
+    }
+
+    // 添加新的查看按钮
+    const viewButton = document.createElement('button');
+    viewButton.id = 'viewRepairedButton';
+    viewButton.className = 'btn btn-outline-info mt-2';
+    viewButton.innerHTML = '<i class="fas fa-eye me-2"></i>查看修复后的模型';
+    viewButton.onclick = function() {
+        // 跳转到可视化页面并加载修复后的模型
+        window.location.href = `/mesh-visualization?file=${fileId}`;
+    };
+
+    repairControls.appendChild(viewButton);
+}
+
+// 显示修复结果
+function displayRepairResults(result) {
+    const resultsHtml = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle me-2"></i>修复完成！</h6>
+            <div class="small mt-2">
+                <div>✓ 修复了 ${result.holes_filled} 个孔洞</div>
+                <div>✓ 修复了 ${result.edges_fixed} 条非流形边</div>
+                <div>✓ 解决了 ${result.intersections_resolved} 个自交问题</div>
+                <div>✓ 移除了 ${result.vertices_removed} 个孤立顶点</div>
+                <div>✓ 修复了 ${result.faces_repaired} 个退化面片</div>
+                <div class="mt-2"><strong>修复后文件:</strong> ${result.repaired_filename}</div>
+            </div>
+        </div>
+    `;
+
+    // 在分析结果区域显示修复结果
+    document.getElementById('analysisResults').innerHTML = resultsHtml;
+}

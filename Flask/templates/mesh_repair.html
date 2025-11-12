@@ -87,32 +87,7 @@
                     {% endfor %}
                 </ul>
 
-                <!-- 修补选项 -->
-                <div class="px-3 mt-4">
-                    <h6 class="text-uppercase text-white-50 mb-3">
-                        <i class="fas fa-cog me-2"></i>修补设置
-                    </h6>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="holeFilling" checked>
-                        <label class="form-check-label text-white small" for="holeFilling">孔洞填充</label>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="selfIntersection" checked>
-                        <label class="form-check-label text-white small" for="selfIntersection">自交修复</label>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="manifoldCheck" checked>
-                        <label class="form-check-label text-white small" for="manifoldCheck">流形检查</label>
-                    </div>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="smoothing" checked>
-                        <label class="form-check-label text-white small" for="smoothing">表面平滑</label>
-                    </div>
 
-                    <h6 class="text-uppercase text-white-50 mb-2" hidden="hidden">修复强度</h6>
-                    <input type="range" class="form-range" id="repairStrength" min="1" max="10" value="5" hidden="hidden">
-                    <small class="text-white-50" id="strengthValue" hidden="hidden">中等 (5)</small>
-                </div>
 
                 <!-- 当前文件信息 -->
                 <div class="px-3 mt-4" id="currentFileInfo" style="display: none;">
@@ -594,20 +569,8 @@ function displayAnalysisResults(analysis) {
                 <span class="badge bg-danger rounded-pill">${analysis.holes}</span>
             </div>
             <div class="list-group-item d-flex justify-content-between align-items-center">
-                非流形边
-                <span class="badge bg-warning rounded-pill">${analysis.non_manifold_edges}</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                自交面片
-                <span class="badge bg-info rounded-pill">${analysis.self_intersections}</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                孤立顶点
-                <span class="badge bg-secondary rounded-pill">${analysis.isolated_vertices}</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                退化面片
-                <span class="badge bg-dark rounded-pill">${analysis.degenerate_faces}</span>
+                边界边数量
+                <span class="badge bg-warning rounded-pill">${analysis.line_num}</span>
             </div>
         </div>
     `;
@@ -653,7 +616,13 @@ function repairMesh() {
         if (data.success) {
             // 显示修复结果
             displayRepairResults(data.result);
-            document.getElementById('downloadButton').disabled = false;
+
+            const downloadButton = document.getElementById('downloadButton');
+            downloadButton.disabled = false;
+            downloadButton.onclick = function() {
+                downloadRepairedMesh(data.result.repaired_file_id);
+            };
+
             updateStep(4); // 进入结果验证步骤
         } else {
             alert('修复失败: ' + data.error);
@@ -673,10 +642,7 @@ function displayRepairResults(result) {
             <h6><i class="fas fa-check-circle me-2"></i>修复完成！</h6>
             <div class="small mt-2">
                 <div>✓ 修复了 ${result.holes_filled} 个孔洞</div>
-                <div>✓ 修复了 ${result.edges_fixed} 条非流形边</div>
-                <div>✓ 解决了 ${result.intersections_resolved} 个自交问题</div>
-                <div>✓ 移除了 ${result.vertices_removed} 个孤立顶点</div>
-                <div>✓ 修复了 ${result.faces_repaired} 个退化面片</div>
+                <div>✓ 倒角距离结果为 ${result.chamfer_distance} </div>
             </div>
         </div>
     `;
@@ -686,9 +652,10 @@ function displayRepairResults(result) {
 }
 
 // 下载修复后的模型
-function downloadRepairedMesh() {
-    if (currentFileId) {
-        window.open(`/download-mesh/${currentFileId}`, '_blank');
+function downloadRepairedMesh(repairedFileId) {
+    // print(repairedFileId)
+    if (repairedFileId) {
+        window.open(`/download-mesh/${repairedFileId}`, '_blank');
     } else {
         alert('没有可下载的文件');
     }
