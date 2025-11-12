@@ -124,4 +124,9 @@ def show_two_meshes_with_holes(mesh1, mesh2, hole_loops=None,
     vedo.show([plots1, plots2], N=2, axes=1, bg='white', size=(1600, 800))
 
 def show_mesh_info(mesh: trimesh.Trimesh):
+    """
+    返回网格的基本信息
+    :param mesh:
+    :return: [顶点数量，边数量，面数量]
+    """
     return [len(mesh.vertices), len(mesh.edges_unique), len(mesh.faces)]
