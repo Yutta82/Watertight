@@ -122,3 +122,6 @@ def show_two_meshes_with_holes(mesh1, mesh2, hole_loops=None,
 
     # 并排显示两个网格
     vedo.show([plots1, plots2], N=2, axes=1, bg='white', size=(1600, 800))
+
+def show_mesh_info(mesh: trimesh.Trimesh):
+    return [len(mesh.vertices), len(mesh.edges_unique), len(mesh.faces)]

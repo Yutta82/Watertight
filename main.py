@@ -3,7 +3,7 @@ import trimesh
 from Detector.HoleDetector import HoleDetector
 from Repairer.HoleRepairer import HoleRepairer
 from utils.chamfer_distance import calculate_chamfer_distance
-from utils.visual import show_mesh, show_two_meshes_with_holes
+from utils.visual import show_mesh, show_two_meshes_with_holes, show_mesh_info
 
 
 def main():
