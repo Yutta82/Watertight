@@ -1,9 +1,15 @@
+import trimesh
 from flask import Flask, render_template, request, jsonify, send_file, flash, redirect, url_for, send_from_directory
 import os
 import uuid
 from werkzeug.utils import secure_filename
 import tempfile
 import shutil
+
+from Detector.HoleDetector import HoleDetector
+from Repairer.HoleRepairer import HoleRepairer
+from utils.chamfer_distance import calculate_chamfer_distance
+from utils.visual import show_mesh_info
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
@@ -30,13 +36,14 @@ def get_file_info(filepath):
     try:
         size = os.path.getsize(filepath)
         ext = filepath.rsplit('.', 1)[1].lower() if '.' in filepath else 'unknown'
-
+        mesh = trimesh.load_mesh(filepath)
+        msg = show_mesh_info(mesh)
         # 这里可以添加更详细的mesh文件解析逻辑
         # 目前返回模拟数据
         import random
         return {
-            'vertices': random.randint(1000, 100000),
-            'faces': random.randint(2000, 200000),
+            'vertices': msg[0],
+            'faces': msg[2],
             'size': size,
             'format': ext.upper()
         }
@@ -202,8 +209,8 @@ def get_mesh_data(file_id):
     # 现在返回模拟数据
     import random
     mesh_data = {
-        'vertices': file_info.get('file_info', {}).get('vertices', random.randint(1000, 100000)),
-        'faces': file_info.get('file_info', {}).get('faces', random.randint(2000, 200000)),
+        'vertices': file_info.get('file_info', {}).get('vertices'),
+        'faces': file_info.get('file_info', {}).get('faces'),
         'file_url': f"/uploads/{file_info['saved_name']}",
         'filename': file_info['original_name'],
         'format': file_info.get('file_info', {}).get('format', file_info['saved_name'].split('.')[-1].upper())
@@ -222,18 +229,14 @@ def analyze_mesh(file_id):
         return jsonify({'success': False, 'error': '文件不存在'})
 
     file_info = uploaded_files[file_id]
-
-    # 模拟分析过程
-    import time
-    time.sleep(2)  # 模拟处理时间
+    mesh = trimesh.load_mesh(file_info['filepath'])
+    hd = HoleDetector(mesh)
+    hole_loops = hd.detect_holes_2()
 
     # 返回分析结果（模拟数据）
     analysis_result = {
-        'holes': 3,
-        'non_manifold_edges': 12,
-        'self_intersections': 2,
-        'isolated_vertices': 8,
-        'degenerate_faces': 5
+        'holes': len(hole_loops),
+        'line_num': len(hd.boundary_edges)
     }
 
     return jsonify({
@@ -251,25 +254,84 @@ def repair_mesh(file_id):
     # 获取修复参数
     repair_options = request.json.get('options', {})
 
-    # 模拟修复过程
-    import time
-    time.sleep(3)  # 模拟修复时间
+    file_info = uploaded_files[file_id]
+    input_filepath = file_info['filepath']
 
-    # 返回修复结果（模拟数据）
-    repair_result = {
-        'holes_filled': 3,
-        'edges_fixed': 12,
-        'intersections_resolved': 2,
-        'vertices_removed': 8,
-        'faces_repaired': 5,
-        'success': True
-    }
+    try:
+        repaired_file_id = str(uuid.uuid4())
+        repaired_filename = f"repaired_{file_info['original_name']}"
+        repaired_filepath = os.path.join(app.config['UPLOAD_FOLDER'], f"{repaired_file_id}.obj")
 
-    return jsonify({
-        'success': True,
-        'result': repair_result
-    })
+        # 调用实际的修复方法
+        mesh = trimesh.load_mesh(input_filepath)
+        hd = HoleDetector(mesh)
+        hole_loops = hd.detect_holes_2()
+        repairer = HoleRepairer(mesh)
+        repaired_mesh = repairer.repair_all_holes(hole_loops, method='planar')
+        repaired_mesh.export(repaired_filepath)
 
+        # 获取修复后文件的信息
+        repaired_file_info = get_file_info(repaired_filepath)
+
+        CD = calculate_chamfer_distance(mesh, repaired_mesh, 20000)
+        print(CD)
+        # 存储修复后文件的信息
+        uploaded_files[repaired_file_id] = {
+            'original_name': repaired_filename,
+            'saved_name': f"{repaired_file_id}.obj",
+            'filepath': repaired_filepath,
+            'file_info': repaired_file_info,
+            'upload_time': '刚刚',
+            'is_repaired': True,  # 标记为修复后的文件
+            'original_file_id': file_id,  # 记录原始文件ID
+            'chamfer_distance': CD[0]
+        }
+
+        # 返回修复结果
+        repair_result = {
+            'holes_filled': repair_options.get('holes_filled', 3),
+            'edges_fixed': repair_options.get('edges_fixed', 12),
+            'intersections_resolved': repair_options.get('intersections_resolved', 2),
+            'vertices_removed': repair_options.get('vertices_removed', 8),
+            'faces_repaired': repair_options.get('faces_repaired', 5),
+            'success': True,
+            'repaired_file_id': repaired_file_id,
+            'repaired_filename': repaired_filename,
+            'chamfer_distance': CD[0]
+        }
+
+        return jsonify({
+            'success': True,
+            'result': repair_result
+        })
+
+    except Exception as e:
+        print(f"修复过程出错: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'修复失败: {str(e)}'
+        })
+
+
+@app.route('/download-repaired-mesh/<file_id>')
+def download_repaired_mesh(file_id):
+    """下载修复后的mesh文件"""
+    if file_id not in uploaded_files:
+        flash('文件不存在', 'error')
+        return redirect(url_for('mesh_repair'))
+
+    file_info = uploaded_files[file_id]
+
+    # 确保这是修复后的文件
+    if not file_info.get('is_repaired', False):
+        flash('这不是修复后的文件', 'error')
+        return redirect(url_for('mesh_repair'))
+
+    return send_file(
+        file_info['filepath'],
+        as_attachment=True,
+        download_name=file_info['original_name']
+    )
 
 @app.route('/download-mesh/<file_id>')
 def download_mesh(file_id):
@@ -285,7 +347,7 @@ def download_mesh(file_id):
     return send_file(
         file_info['filepath'],
         as_attachment=True,
-        download_name=f"repaired_{file_info['original_name']}"
+        download_name=f"{file_info['original_name']}"
     )
 
 

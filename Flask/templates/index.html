@@ -30,25 +30,6 @@
                 </ul>
 
                 <!-- 系统状态 -->
-                <div class="px-3 mt-5">
-                    <h6 class="text-uppercase text-white-50 mb-3">
-                        <i class="fas fa-chart-bar me-2"></i>系统状态
-                    </h6>
-                    <div class="text-white small">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>CPU使用率</span>
-                            <span class="text-success">42%</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>内存使用</span>
-                            <span class="text-warning">68%</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>GPU可用</span>
-                            <span class="text-success">是</span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </nav>
 
@@ -116,7 +97,7 @@
                             </div>
                             <h5 class="card-title">模型上传</h5>
                             <p class="card-text text-muted">
-                                支持OBJ, STL, PLY等多种3D文件格式，快速上传并预览您的网格模型。
+                                支持OBJ, STL的3D文件格式，快速上传并预览您的网格模型。
                             </p>
                             <button class="btn btn-outline-primary mt-2">
                                 <i class="fas fa-cloud-upload-alt me-2"></i>上传模型
@@ -150,7 +131,7 @@
                             </div>
                             <h5 class="card-title">智能修复</h5>
                             <p class="card-text text-muted">
-                                自动检测并修复网格中的孔洞、自交、非流形边等常见问题。
+                                自动检测并修复网格中的孔洞等常见问题。
                             </p>
                             <a href="{{ url_for('mesh_repair') }}" class="btn btn-outline-warning mt-2">
                                 <i class="fas fa-magic me-2"></i>网格修复
@@ -160,59 +141,7 @@
                 </div>
             </div>
 
-            <!-- 示例模型 -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-0 py-3">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-database me-2 text-info"></i>示例模型库
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>模型名称</th>
-                                            <th>顶点数</th>
-                                            <th>面片数</th>
-                                            <th>文件大小</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for mesh in mesh_examples %}
-                                        <tr>
-                                            <td>
-                                                <i class="fas fa-cube me-2 text-primary"></i>
-                                                <strong>{{ mesh.name }}</strong>
-                                            </td>
-                                            <td>{{ "{:,}".format(mesh.vertices) }}</td>
-                                            <td>{{ "{:,}".format(mesh.faces) }}</td>
-                                            <td>{{ mesh.file_size }}</td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-outline-primary">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-success">
-                                                        <i class="fas fa-download"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-info">
-                                                        <i class="fas fa-chart-bar"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!---->
         </main>
     </div>
 </div>

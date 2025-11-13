@@ -22,9 +22,11 @@ def calculate_chamfer_distance(mesh1, mesh2, num_samples=None):
         # 否则使用网格顶点
         points1 = mesh1.vertices
         points2 = mesh2.vertices
-
+    print('points1:', points1.shape)
+    print('points2:', points2.shape)
     # 计算从mesh1到mesh2的最小距离
     distances1_to_2 = cdist(points1, points2, metric='euclidean')
+    print('distances1_to_2:', distances1_to_2.shape)
     min_distances1_to_2 = np.min(distances1_to_2, axis=1)
     d1_to_2 = np.mean(min_distances1_to_2)
 
