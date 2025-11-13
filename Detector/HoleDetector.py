@@ -323,10 +323,10 @@ class HoleDetector:
             return []
 
         self.build_hole_loops()
-        valid_loops = self.validate_loops()
+        self.hole_loops = self.validate_loops()
 
-        print(f"Final result: {len(valid_loops)} valid holes detected")
-        return valid_loops
+        print(f"Final result: {len(self.hole_loops)} valid holes detected")
+        return self.hole_loops
         # return self.build_hole_loops()
 
     def get_hole_loop(self):

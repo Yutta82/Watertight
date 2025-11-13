@@ -60,19 +60,16 @@ def show_mesh(mesh,
     return plotter
 
 
-def show_two_meshes_with_holes(mesh1, mesh2, hole_loops=None,
-                               title1="Original Mesh", title2="Repaired Mesh",
+def show_two_meshes_with_holes(mesh1, mesh2, chamfer_distance, hole_loops=None,
                                highlight_holes=True):
     """
     使用vedo同时展示两个网格，可以高亮显示孔洞
 
-    Args:
-        mesh1: 第一个网格对象（trimesh）
-        mesh2: 第二个网格对象（trimesh）
-        hole_loops: 原始网格的孔洞边界循环列表
-        title1: 第一个网格的标题
-        title2: 第二个网格的标题
-        highlight_holes: 是否高亮显示孔洞
+    :param mesh1: 第一个网格对象（trimesh）
+    :param mesh2: 第二个网格对象（trimesh）
+    :param hole_loops: 原始网格的孔洞边界循环列表
+    :param chamfer_distance:
+    :param highlight_holes: 是否高亮显示孔洞
     """
     # 创建第一个网格的可视化
     vedo_mesh1 = vedo.Mesh([mesh1.vertices, mesh1.faces])
@@ -93,7 +90,7 @@ def show_two_meshes_with_holes(mesh1, mesh2, hole_loops=None,
 
     # 在第一个网格上添加标题文本
     title_text1 = vedo.Text2D(
-        f"{title1}\nHoles: {len(hole_loops) if hole_loops else 0}",
+        f"Original Mesh\nHoles: {len(hole_loops) if hole_loops else 0}",
         pos='top-center',
         c='black',
         s=1.2,
@@ -111,7 +108,7 @@ def show_two_meshes_with_holes(mesh1, mesh2, hole_loops=None,
 
     # 在第二个网格上添加标题文本
     title_text2 = vedo.Text2D(
-        f"{title2}",
+        f"Repaired Mesh\nCD: {chamfer_distance}",
         pos='top-center',
         c='black',
         s=1.2,
