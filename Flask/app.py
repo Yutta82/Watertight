@@ -289,7 +289,7 @@ def repair_mesh(file_id):
 
         # 返回修复结果
         repair_result = {
-            'holes_filled': repair_options.get('holes_filled', 3),
+            'holes_filled': len(hole_loops),
             'edges_fixed': repair_options.get('edges_fixed', 12),
             'intersections_resolved': repair_options.get('intersections_resolved', 2),
             'vertices_removed': repair_options.get('vertices_removed', 8),

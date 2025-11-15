@@ -591,11 +591,11 @@ function repairMesh() {
 
     // 获取修复选项
     const repairOptions = {
-        hole_filling: document.getElementById('holeFilling').checked,
-        self_intersection: document.getElementById('selfIntersection').checked,
-        manifold_check: document.getElementById('manifoldCheck').checked,
-        smoothing: document.getElementById('smoothing').checked,
-        strength: parseInt(document.getElementById('repairStrength').value)
+        hole_filling: 0,
+        self_intersection: 0,
+        manifold_check: 0,
+        smoothing: 0,
+        strength: 0
     };
 
     // 发送修复请求
